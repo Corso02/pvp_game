@@ -1,7 +1,7 @@
 # USAGE
 Clone this repo on your computer.
 Run ```npm i``` to download all packages.
-Create '.env' file where you will specify variable "DEV_PORT". This port will be used to run server.
+Create '.env' file where you will specify variable `DEV_PORT`. This port will be used to run server.
 Run ```npm run tsc``` to compile all typescript to vanilla javascript.
 
 # Project description
