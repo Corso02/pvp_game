@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "alwaysStrict": true,
+        "noImplicitAny": true,
+        "outDir": "./out",
+        "rootDir": "./src",
+        "esModuleInterop": true
+    },
+    "exclude": [
+        "node_modules"
+    ]
+
+}
