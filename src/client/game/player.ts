@@ -12,13 +12,11 @@ class Player extends Phaser.GameObjects.Container{
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string, game: Phaser.Game){
         super(scene, x, y)
         this.player_body = new Physics.Arcade.Sprite(scene, 0, 0, texture)
-        this.player_body.body = new Physics.Arcade.Body(scene.physics.world, this.player_body)
         this.arm = new Physics.Arcade.Sprite(scene, 7, 3, "arm") // +7, +3
-        this.arm.body = new Physics.Arcade.Body(scene.physics.world, this.arm) 
-        this.setSize(42, 75)
-        this.setDisplaySize(42, 75)
+        this.setSize(42, 75) //set actual size of container
+        this.setDisplaySize(42, 75) //set render size, must call setSize before this funtion (container size is 0x0 when created)
        
-        this.add([this.player_body, this.arm])
+        this.add([this.player_body, this.arm]) // add elements to this container
 
         scene.add.existing(this)
      
