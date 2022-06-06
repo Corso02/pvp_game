@@ -5,10 +5,17 @@
         "noImplicitAny": true,
         "outDir": "./out",
         "rootDir": "./src",
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "sourceMap": true,
+        "declaration": true,
+        "typeRoots": [
+            "./node_modules/phaser/types"
+        ],
+        "types": ["Phaser"]
     },
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "out"
     ]
 
 }
