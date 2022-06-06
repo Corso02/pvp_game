@@ -12,13 +12,15 @@ class Player extends Phaser.GameObjects.Container{
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string, game: Phaser.Game){
         super(scene, x, y)
         this.player_body = new Physics.Arcade.Sprite(scene, 0, 0, texture)
-        this.arm = new Physics.Arcade.Sprite(scene, 7, 3, "arm") // +7, +3
+        this.arm = new Physics.Arcade.Sprite(scene, 0, -5, "arm") // +7, +3
+        //this.arm.setRotation(Phaser.Math.DegToRad(-45))
         this.setSize(42, 75) //set actual size of container
         this.setDisplaySize(42, 75) //set render size, must call setSize before this funtion (container size is 0x0 when created)
        
         this.add([this.player_body, this.arm]) // add elements to this container
 
         scene.add.existing(this)
+        this.arm.setOrigin(0, 0)
      
         this.scene.physics.world.enableBody(this, Physics.Arcade.DYNAMIC_BODY)
         this.doubleJumped = false
@@ -120,7 +122,9 @@ class Player extends Phaser.GameObjects.Container{
     }
 
     rotateArm(pointer: Input.Pointer){
-        this.arm.setRotation(Phaser.Math.Angle.Between(this.arm.x, this.arm.y, pointer.worldX, pointer.worldY) - 135)
+        console.log("xdd")
+        if(origin)
+        this.arm.setRotation(Phaser.Math.Angle.Between(this.arm.originX, this.arm.originY, pointer.worldX, pointer.worldY) * -1)
     }
 
     pickWeapon(weaponToPick: Weapon){
