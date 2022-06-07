@@ -57,7 +57,7 @@ class MainMenu extends Scene{
     }
 
     update(){
-        this.player.move(this.keys)
+        this.player.move(this.keys, this.input.activePointer)
     }
 }
 

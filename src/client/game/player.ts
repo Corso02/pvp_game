@@ -72,12 +72,16 @@ class Player extends Phaser.GameObjects.Container{
         this.weapon = newWeapon
     }
 
-    moveRight(): void{
+    moveRight(pointer: Phaser.Input.Pointer): void{
+        this.player_body.setFlipX(pointer.worldX < this.x)
+        this.arm.setFlipX(pointer.worldX > this.x)
         this._setVelocityX(150) 
     }
 
-    moveLeft(): void{
-         this._setVelocityX(-150)
+    moveLeft(pointer: Phaser.Input.Pointer): void{
+        this.player_body.setFlipX(pointer.worldX > this.x)
+        this.arm.setFlipX(pointer.worldX > this.x)
+        this._setVelocityX(-150)
     }
 
     jump(): void{
@@ -88,18 +92,20 @@ class Player extends Phaser.GameObjects.Container{
         this._setVelocityX(0)
     }
 
-    move(keys: any): void{
+    move(keys: any, pointer: Phaser.Input.Pointer): void{
         if(keys.MOVE_LEFT.isDown || keys.MOVE_LEFT_ALT.isDown){
             this.player_body.anims.play("left_no_gun", true)
-            this.moveLeft()
+            this.moveLeft(pointer)
         }
         else if(keys.MOVE_RIGHT.isDown || keys.MOVE_RIGHT_ALT.isDown){
             this.player_body.anims.play("right_no_gun", true)
-            this.moveRight()
+            this.moveRight(pointer)
         }
         else{
             this.player_body.anims.play("turn_no_gun", true)
             this.moveStop()
+            this.player_body.setFlipX(false)
+            this.arm.x = 0
         }
         if(Phaser.Input.Keyboard.JustDown(keys.JUMP) || Phaser.Input.Keyboard.JustDown(keys.JUMP_ALT)){
             if(this.body.gameObject){
@@ -121,10 +127,12 @@ class Player extends Phaser.GameObjects.Container{
         return this.player_body
     }
 
-    rotateArm(pointer: Input.Pointer){
-        console.log("xdd")
-        if(origin)
-        this.arm.setRotation(Phaser.Math.Angle.Between(this.arm.originX, this.arm.originY, pointer.worldX, pointer.worldY) * -1)
+    rotateArm(pointer: Input.Pointer, scene?: Phaser.Scene){
+       // console.log("xdd")
+       // this.arm.rotation = Phaser.Math.Angle.BetweenPoints(this.player_body, pointer)
+       // scene.physics.moveToObject(this.arm, pointer, 100, 10)
+       
+      
     }
 
     pickWeapon(weaponToPick: Weapon){
