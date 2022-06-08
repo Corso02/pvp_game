@@ -7,13 +7,12 @@ class Player extends Phaser.GameObjects.Container{
     private hasWeapon: boolean
     private weapon: Weapon
     private arm: Physics.Arcade.Sprite
-    private player_body: Physics.Arcade.Sprite
+    private player_body: Phaser.GameObjects.Sprite
 
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string, game: Phaser.Game){
         super(scene, x, y)
-        this.player_body = new Physics.Arcade.Sprite(scene, 0, 0, texture)
+        this.player_body = scene.add.sprite(0 , 0, texture) //added sprite like this to make animations playable (sprites in container do not play animations)
         this.arm = new Physics.Arcade.Sprite(scene, 0, -5, "arm") // +7, +3
-        //this.arm.setRotation(Phaser.Math.DegToRad(-45))
         this.setSize(42, 75) //set actual size of container
         this.setDisplaySize(42, 75) //set render size, must call setSize before this funtion (container size is 0x0 when created)
        
@@ -30,7 +29,7 @@ class Player extends Phaser.GameObjects.Container{
     }
 
     createAnims(game: Phaser.Game): void{
-        let frameRate: number = 2
+        let frameRate: number = 15
         game.anims.create({
             key: "left_no_gun",
             frames: game.anims.generateFrameNumbers("player", {start: 0, end: 3}),
@@ -74,13 +73,15 @@ class Player extends Phaser.GameObjects.Container{
 
     moveRight(pointer: Phaser.Input.Pointer): void{
         this.player_body.setFlipX(pointer.worldX < this.x)
-        this.arm.setFlipX(pointer.worldX > this.x)
+        this.arm.setFlipX(pointer.worldX < this.x)
+        this.arm.x = pointer.worldX < this.x ? -15 : 0
         this._setVelocityX(150) 
     }
 
     moveLeft(pointer: Phaser.Input.Pointer): void{
         this.player_body.setFlipX(pointer.worldX > this.x)
-        this.arm.setFlipX(pointer.worldX > this.x)
+        this.arm.setFlipX(pointer.worldX < this.x)
+        this.arm.x = pointer.worldX < this.x ? -15 : 0
         this._setVelocityX(-150)
     }
 
@@ -106,6 +107,7 @@ class Player extends Phaser.GameObjects.Container{
             this.moveStop()
             this.player_body.setFlipX(false)
             this.arm.x = 0
+            this.arm.setFlipX(false)
         }
         if(Phaser.Input.Keyboard.JustDown(keys.JUMP) || Phaser.Input.Keyboard.JustDown(keys.JUMP_ALT)){
             if(this.body.gameObject){
@@ -123,7 +125,7 @@ class Player extends Phaser.GameObjects.Container{
         return this.arm
     }
 
-    getPlayerBody(): Physics.Arcade.Sprite{
+    getPlayerBody(): Phaser.GameObjects.Sprite{
         return this.player_body
     }
 
