@@ -7,12 +7,12 @@ export interface Weapon{
     damage: number
 }
 
-/* export const pistol: Weapon = {
+ export const pistol: Weapon = {
     x_cord: 0,
     y_cord: 0, 
     texture: "pistol",
     damage: 20
-} */
+} 
 
 export const create_custom_weapon = (texture: string, x_cord?: number, y_cord?: number, damage?: number): Weapon => {
     let custom_weapon: Weapon = {

@@ -43,6 +43,7 @@ class MainMenu extends Scene{
         
         this.physics.add.collider(this.platforms, this.weapons)
         this.physics.add.collider(this.platforms, this.player)
+        this.physics.add.collider(this.weapons, this.player, this.player.pickWeapon, null, this.player) 
 
 
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {

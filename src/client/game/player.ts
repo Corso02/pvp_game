@@ -1,5 +1,7 @@
 import Phaser ,{ Input, Physics } from "phaser";
-import { Weapon } from "./Weapon";
+import { pistol, Weapon } from "./Weapon";
+import RotateTo from 'phaser3-rex-plugins/plugins/rotateto.js';
+
 
 class Player extends Phaser.GameObjects.Container{
 
@@ -8,22 +10,30 @@ class Player extends Phaser.GameObjects.Container{
     private weapon: Weapon
     private arm: Physics.Arcade.Sprite
     private player_body: Phaser.GameObjects.Sprite
+    private moving: boolean
+    private arm_container: Phaser.GameObjects.Container //container to clip together weapon and arm, easier manipulation with weapon and arm
+    private rotateObj: RotateTo
 
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string, game: Phaser.Game){
         super(scene, x, y)
         this.player_body = scene.add.sprite(0 , 0, texture) //added sprite like this to make animations playable (sprites in container do not play animations)
-        this.arm = new Physics.Arcade.Sprite(scene, 0, -5, "arm") // +7, +3
+        this.arm = new Physics.Arcade.Sprite(scene, 0, 0, "arm") // +7, +3
+        this.arm_container =  new Phaser.GameObjects.Container(scene, 0, -5, [this.arm]) /* new ContainerLite(scene, 30, 40, 25, 15, [this.arm]) */
+        
         this.setSize(42, 75) //set actual size of container
         this.setDisplaySize(42, 75) //set render size, must call setSize before this funtion (container size is 0x0 when created)
        
-        this.add([this.player_body, this.arm]) // add elements to this container
+        this.add([this.player_body, this.arm_container]) // add elements to this container
 
         scene.add.existing(this)
-        this.arm.setOrigin(0, 0)
+        this.arm.setOrigin(0, 0) //pivot point
      
         this.scene.physics.world.enableBody(this, Physics.Arcade.DYNAMIC_BODY)
         this.doubleJumped = false
         this.hasWeapon = false
+
+        this.scene.physics.world.enableBody(this.arm, Physics.Arcade.STATIC_BODY)
+        this.scene.physics.world.enableBody(this.arm_container, Physics.Arcade.STATIC_BODY)
 
         this.createAnims(game)
     }
@@ -73,16 +83,18 @@ class Player extends Phaser.GameObjects.Container{
 
     moveRight(pointer: Phaser.Input.Pointer): void{
         this.player_body.setFlipX(pointer.worldX < this.x)
-        this.arm.setFlipX(pointer.worldX < this.x)
-        this.arm.x = pointer.worldX < this.x ? -15 : 0
+        this.arm_container.scaleX = pointer.worldX < this.x ? -1 : 1        
         this._setVelocityX(150) 
+        this.moving = true
+        this.rotateArm(pointer)
     }
 
     moveLeft(pointer: Phaser.Input.Pointer): void{
         this.player_body.setFlipX(pointer.worldX > this.x)
-        this.arm.setFlipX(pointer.worldX < this.x)
-        this.arm.x = pointer.worldX < this.x ? -15 : 0
+        this.arm_container.scaleX = pointer.worldX < this.x ? -1 : 1 //flipping container
         this._setVelocityX(-150)
+        this.moving = true
+        this.rotateArm(pointer)
     }
 
     jump(): void{
@@ -90,6 +102,9 @@ class Player extends Phaser.GameObjects.Container{
     }
 
     moveStop(): void{
+        this.player_body.setFlipX(false)
+        this.arm_container.scaleX = 1
+        this.moving = false
         this._setVelocityX(0)
     }
 
@@ -105,9 +120,6 @@ class Player extends Phaser.GameObjects.Container{
         else{
             this.player_body.anims.play("turn_no_gun", true)
             this.moveStop()
-            this.player_body.setFlipX(false)
-            this.arm.x = 0
-            this.arm.setFlipX(false)
         }
         if(Phaser.Input.Keyboard.JustDown(keys.JUMP) || Phaser.Input.Keyboard.JustDown(keys.JUMP_ALT)){
             if(this.body.gameObject){
@@ -130,16 +142,23 @@ class Player extends Phaser.GameObjects.Container{
     }
 
     rotateArm(pointer: Input.Pointer, scene?: Phaser.Scene){
-       // console.log("xdd")
-       // this.arm.rotation = Phaser.Math.Angle.BetweenPoints(this.player_body, pointer)
-       // scene.physics.moveToObject(this.arm, pointer, 100, 10)
-       
-      
+        let angleOffset: number = 11.75
+        this.arm_container.setRotation((Phaser.Math.Angle.BetweenPoints(this, pointer) + angleOffset) - ((pointer.worldX < this.x && this.moving) ? 8 : 0)) // rotata container accroding to mouse position
+        if(this.arm_container.getByName("weapon") != null)
+            this.arm_container.getByName("weapon").body.gameObject.scaleY = !this.moving && pointer.worldX < this.x ? -1 : 1 // rotate weapon on Y axis according to mouse pos.
     }
-
-    pickWeapon(weaponToPick: Weapon){
+    // object1 - player container, object2 - weapon
+    pickWeapon(player: any, weapon: any){
+        if(weapon.texture.key == "pistol")
+            this.setWeapon(pistol)
         this.setHasWeapon(true)
-        this.setWeapon(weaponToPick)
+        weapon.setActive(false)
+        weapon.body.enable = false
+        weapon.x = 25 //position in container
+        weapon.y = 22
+        weapon.name = "weapon"
+        weapon.rotation = -11.75
+        this.arm_container.add(weapon) //clip weapon to arm
     }
 
     shoot(): void{
