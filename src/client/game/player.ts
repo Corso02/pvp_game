@@ -2,6 +2,11 @@ import Phaser ,{ Input, Physics } from "phaser";
 import { pistol, Weapon } from "./Weapon";
 import RotateTo from 'phaser3-rex-plugins/plugins/rotateto.js';
 
+interface movement {
+    moving: boolean,
+    moving_left: boolean,
+    moving_right: boolean
+}
 
 class Player extends Phaser.GameObjects.Container{
 
@@ -10,7 +15,11 @@ class Player extends Phaser.GameObjects.Container{
     private weapon: Weapon
     private arm: Physics.Arcade.Sprite
     private player_body: Phaser.GameObjects.Sprite
-    private moving: boolean
+    private movement: movement = {
+        moving: false,
+        moving_left: false,
+        moving_right: false
+    }
     private arm_container: Phaser.GameObjects.Container //container to clip together weapon and arm, easier manipulation with weapon and arm
     private rotateObj: RotateTo
 
@@ -34,6 +43,7 @@ class Player extends Phaser.GameObjects.Container{
 
         this.scene.physics.world.enableBody(this.arm, Physics.Arcade.STATIC_BODY)
         this.scene.physics.world.enableBody(this.arm_container, Physics.Arcade.STATIC_BODY)
+
 
         this.createAnims(game)
     }
@@ -81,11 +91,28 @@ class Player extends Phaser.GameObjects.Container{
         this.weapon = newWeapon
     }
 
+    setMovingRight(val: boolean): void{
+        this.movement.moving = val
+        this.movement.moving_right = val
+    }
+
+    setMovingLeft(val: boolean): void{
+        this.movement.moving = val
+        this.movement.moving_right = val
+    }
+
+    resetMovement(): void{
+        this.movement.moving = false
+        this.movement.moving_left = false
+        this.movement.moving_right = false
+    }
+
     moveRight(pointer: Phaser.Input.Pointer): void{
         this.player_body.setFlipX(pointer.worldX < this.x)
         this.arm_container.scaleX = pointer.worldX < this.x ? -1 : 1        
         this._setVelocityX(150) 
-        this.moving = true
+        this.setMovingLeft(false)
+        this.setMovingRight(true)
         this.rotateArm(pointer)
     }
 
@@ -93,7 +120,8 @@ class Player extends Phaser.GameObjects.Container{
         this.player_body.setFlipX(pointer.worldX > this.x)
         this.arm_container.scaleX = pointer.worldX < this.x ? -1 : 1 //flipping container
         this._setVelocityX(-150)
-        this.moving = true
+        this.setMovingRight(false)
+        this.setMovingLeft(true)
         this.rotateArm(pointer)
     }
 
@@ -104,7 +132,7 @@ class Player extends Phaser.GameObjects.Container{
     moveStop(): void{
         this.player_body.setFlipX(false)
         this.arm_container.scaleX = 1
-        this.moving = false
+        this.resetMovement()
         this._setVelocityX(0)
     }
 
@@ -143,9 +171,9 @@ class Player extends Phaser.GameObjects.Container{
 
     rotateArm(pointer: Input.Pointer, scene?: Phaser.Scene){
         let angleOffset: number = 11.75
-        this.arm_container.setRotation((Phaser.Math.Angle.BetweenPoints(this, pointer) + angleOffset) - ((pointer.worldX < this.x && this.moving) ? 8 : 0)) // rotata container accroding to mouse position
+        this.arm_container.setRotation((Phaser.Math.Angle.BetweenPoints(this, pointer) + angleOffset) - ((pointer.worldX < this.x && this.movement.moving) ? 8 : 0)) // rotata container accroding to mouse position
         if(this.arm_container.getByName("weapon") != null)
-            this.arm_container.getByName("weapon").body.gameObject.scaleY = !this.moving && pointer.worldX < this.x ? -1 : 1 // rotate weapon on Y axis according to mouse pos.
+            this.arm_container.getByName("weapon").body.gameObject.scaleY = !this.movement.moving && pointer.worldX < this.x ? -1 : 1 // rotate weapon on Y axis according to mouse pos.
     }
     // object1 - player container, object2 - weapon
     pickWeapon(player: any, weapon: any){
@@ -161,8 +189,17 @@ class Player extends Phaser.GameObjects.Container{
         this.arm_container.add(weapon) //clip weapon to arm
     }
 
-    shoot(): void{
-        console.log("klik")
+    shoot(bullets: Phaser.Physics.Arcade.StaticGroup, scene: Phaser.Scene, pointer: Phaser.Input.Pointer): void{
+        if(this.getHasWeapon()){
+            //let newBullet: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody = scene.physics.add.sprite(this.x, this.y, "bullet")
+            let newBullet = scene.add.image(this.x + (this.player_body.flipX && this.movement.moving_left ? -20 : 20), this.y - 10, "bullet")
+            scene.physics.world.enableBody(newBullet)
+            newBullet.body.gameObject.body.collideWorldBounds = true
+            newBullet.body.gameObject.body.allowGravity = false
+            scene.physics.moveTo(newBullet, pointer.worldX, pointer.worldY, this.weapon.bullet_speed)
+            newBullet.setRotation(this.arm_container.rotation - 11.75 + ((pointer.worldX < this.x && this.movement.moving) ? 8 : 0))
+            bullets.add(newBullet)
+        }
     }
 
     _setVelocityX(velocity: number): void{

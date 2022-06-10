@@ -2,13 +2,14 @@ import { Input, Scene } from "phaser";
 import Player from "../player";
 import {KEY_BINDINGS, Keyboard} from "../Keyboard";
 import {render_platforms, world_1_platforms } from "../Platforms";
-import { create_custom_weapon, render_weapon, Weapon } from "../Weapon";
+import { check_bullets, create_custom_weapon, render_weapon, Weapon } from "../Weapon";
 
 class MainMenu extends Scene{
     private player: Player
     private keys: any
     private platforms: Phaser.Physics.Arcade.StaticGroup
     private weapons: Phaser.Physics.Arcade.Group
+    private bullets: Phaser.Physics.Arcade.StaticGroup
 
     constructor (){
         super({key: "MainMenu"})
@@ -22,6 +23,7 @@ class MainMenu extends Scene{
        this.load.image("pistol", "images/pistol.png")
        this.load.spritesheet("player", "images/player.png", {frameHeight: 75, frameWidth: 42})
        this.load.image("arm", "images/arm.png")
+       this.load.image("bullet", "images/bullet.png")
     }
 
     create(){
@@ -40,6 +42,8 @@ class MainMenu extends Scene{
         this.keys = this.input.keyboard.addKeys(KEY_BINDINGS)
         this.platforms = this.physics.add.staticGroup()
         render_platforms(this, world_1_platforms, this.platforms)
+
+        this.bullets = this.physics.add.staticGroup()
         
         this.physics.add.collider(this.platforms, this.weapons)
         this.physics.add.collider(this.platforms, this.player)
@@ -48,7 +52,7 @@ class MainMenu extends Scene{
 
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
             if(pointer.leftButtonDown()/*  && this.player.getHasWeapon() */){
-                this.player.shoot()
+                this.player.shoot(this.bullets, this, pointer)
             }
         })
 
@@ -59,6 +63,7 @@ class MainMenu extends Scene{
 
     update(){
         this.player.move(this.keys, this.input.activePointer)
+        check_bullets(this.bullets)
     }
 }
 
