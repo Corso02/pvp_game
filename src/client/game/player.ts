@@ -117,22 +117,28 @@ class Player extends Phaser.GameObjects.Container{
         this.movement.moving_right = false
     }
 
-    moveRight(pointer: Phaser.Input.Pointer): void{
-        this.player_body.setFlipX(pointer.worldX < this.x)
-        this.arm_container.scaleX = pointer.worldX < this.x ? -1 : 1        
+    moveRight(x_cord: number, y_cord: number): void{
+        this.player_body.anims.play("right_no_gun", true)
         this._setVelocityX(150) 
         this.setMovingLeft(false)
         this.setMovingRight(true)
-        this.rotateArm(pointer)
+        //if(pointer){
+            this.player_body.setFlipX(x_cord < this.x)
+            this.arm_container.scaleX = x_cord < this.x ? -1 : 1        
+            this.rotateArm(x_cord, y_cord)
+        //}
     }
 
-    moveLeft(pointer: Phaser.Input.Pointer): void{
-        this.player_body.setFlipX(pointer.worldX > this.x)
-        this.arm_container.scaleX = pointer.worldX < this.x ? -1 : 1 //flipping container
+    moveLeft(x_cord: number, y_cord: number): void{
+        this.player_body.anims.play("left_no_gun", true)
         this._setVelocityX(-150)
         this.setMovingRight(false)
         this.setMovingLeft(true)
-        this.rotateArm(pointer)
+        //if(pointer){
+            this.player_body.setFlipX(x_cord > this.x)
+            this.arm_container.scaleX = x_cord < this.x ? -1 : 1 //flipping container
+            this.rotateArm(x_cord, y_cord)
+        //}
     }
 
     jump(): void{
@@ -140,6 +146,7 @@ class Player extends Phaser.GameObjects.Container{
     }
 
     moveStop(): void{
+        this.player_body.anims.play("turn_no_gun", true)
         this.player_body.setFlipX(false)
         this.arm_container.scaleX = 1
         this.resetMovement()
@@ -148,12 +155,13 @@ class Player extends Phaser.GameObjects.Container{
 
     move(keys: any, pointer: Phaser.Input.Pointer): void{
         if(keys.MOVE_LEFT.isDown || keys.MOVE_LEFT_ALT.isDown){
-            this.player_body.anims.play("left_no_gun", true)
-            this.moveLeft(pointer)
+            this.moveLeft(pointer.x, pointer.y)
             if(this.movement_event_sent.event != "left" || this.movement_event_sent.timestamp - Math.floor(Date.now() / 1000) > 10){
                 socket.emit("movement", {
                     x_cord: this.x,
                     y_cord: this.y,
+                    pointer_x_cord: pointer.x,
+                    pointer_y_cord: pointer.y,
                     movement: "left"
                 })
                 this.movement_event_sent.event = "left"
@@ -161,13 +169,13 @@ class Player extends Phaser.GameObjects.Container{
             }
         }
         else if(keys.MOVE_RIGHT.isDown || keys.MOVE_RIGHT_ALT.isDown){
-            this.player_body.anims.play("right_no_gun", true)
-            this.moveRight(pointer)
-
+            this.moveRight(pointer.x, pointer.y)
             if(this.movement_event_sent.event != "right" || this.movement_event_sent.timestamp - Math.floor(Date.now() / 1000) > 10){
                 socket.emit("movement", {
                     x_cord: this.x,
                     y_cord: this.y,
+                    pointer_x_cord: pointer.x,
+                    pointer_y_cord: pointer.y,
                     movement: "right"
                 })
 
@@ -176,13 +184,14 @@ class Player extends Phaser.GameObjects.Container{
             }
         }
         else{
-            this.player_body.anims.play("turn_no_gun", true)
             this.moveStop()
 
             if(this.movement_event_sent.event != "stop"){
                 socket.emit("movement", {
                     x_cord: this.x,
                     y_cord: this.y,
+                    pointer_x_cord: pointer.x,
+                    pointer_y_cord: pointer.y,
                     movement: "stop"
                 })
                 this.movement_event_sent.event = "stop"
@@ -208,11 +217,15 @@ class Player extends Phaser.GameObjects.Container{
         return this.player_body
     }
 
-    rotateArm(pointer: Input.Pointer, scene?: Phaser.Scene){
+    rotateArm(x_cord: number, y_cord: number, scene?: Phaser.Scene){
         let angleOffset: number = 11.75
-        this.arm_container.setRotation((Phaser.Math.Angle.BetweenPoints(this, pointer) + angleOffset) - ((pointer.worldX < this.x && this.movement.moving) ? 8 : 0)) // rotata container accroding to mouse position
+        this.arm_container.setRotation((Phaser.Math.Angle.Between(this.x, this.y, x_cord, y_cord) + angleOffset) - ((x_cord < this.x && this.movement.moving) ? 8 : 0)) // rotata container accroding to mouse position
         if(this.arm_container.getByName("weapon") != null)
-            this.arm_container.getByName("weapon").body.gameObject.scaleY = !this.movement.moving && pointer.worldX < this.x ? -1 : 1 // rotate weapon on Y axis according to mouse pos.
+            this.arm_container.getByName("weapon").body.gameObject.scaleY = !this.movement.moving && x_cord < this.x ? -1 : 1 // rotate weapon on Y axis according to mouse pos.
+        socket.emit("armRotation", {
+            x_cord,
+            y_cord
+        })
     }
     pickWeapon(player: any, weapon: any){
         if(weapon.texture.key == "pistol")

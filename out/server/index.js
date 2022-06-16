@@ -40,6 +40,12 @@ io.on("connection", function (socket) {
     if (connectedPlayers.length % 2 == 0) {
         var new_id = generateRandomString();
         var second_player = getFreePlayer();
+        io.emit("secondPlayerConnected", {
+            forId: second_player.id
+        });
+        io.emit("secondPlayerConnected", {
+            forId: socket.id
+        });
         var new_room = {
             room_id: new_id,
             player_1_id: new_player.id,
@@ -50,11 +56,20 @@ io.on("connection", function (socket) {
     else
         console.log("wait pls");
     socket.on("movement", function (data) {
-        console.log(data);
-        var otherPlayerId = "";
-        var playerRoom = getRoomByPlayerId(socket.id);
-        otherPlayerId = playerRoom.player_1_id === socket.id ? playerRoom.player_2_id : playerRoom.player_1_id;
-        io.emit("playerMovement", __assign({ forId: otherPlayerId }, data));
+        if (getPlayerById(socket.id).connected_to_room) {
+            var otherPlayerId = "";
+            var playerRoom = getRoomByPlayerId(socket.id);
+            otherPlayerId = playerRoom.player_1_id === socket.id ? playerRoom.player_2_id : playerRoom.player_1_id;
+            io.emit("playerMovement", __assign({ forId: otherPlayerId }, data));
+        }
+    });
+    socket.on("armRotation", function (data) {
+        if (getPlayerById(socket.id).connected_to_room) {
+            var otherPlayerId = "";
+            var playerRoom = getRoomByPlayerId(socket.id);
+            otherPlayerId = playerRoom.player_1_id === socket.id ? playerRoom.player_2_id : playerRoom.player_1_id;
+            io.emit("rotateArm", __assign({ forId: otherPlayerId }, data));
+        }
     });
     socket.on("disconnect", function () {
         removeRoom(getRoomByPlayerId(socket.id));

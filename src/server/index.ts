@@ -39,6 +39,15 @@ io.on("connection", (socket: Socket) => {
     if(connectedPlayers.length % 2 == 0){
         let new_id: string = generateRandomString()
         let second_player: player = getFreePlayer()
+
+        io.emit("secondPlayerConnected", {
+            forId: second_player.id
+        })
+
+        io.emit("secondPlayerConnected", {
+            forId: socket.id
+        })
+
         let new_room: room = {
             room_id: new_id,
             player_1_id: new_player.id,
@@ -51,14 +60,27 @@ io.on("connection", (socket: Socket) => {
     else console.log("wait pls")
 
     socket.on("movement", (data: movement_event) => {
-        console.log(data)
-        let otherPlayerId: string = ""
-        let playerRoom: room = getRoomByPlayerId(socket.id)
-        otherPlayerId = playerRoom.player_1_id === socket.id ? playerRoom.player_2_id : playerRoom.player_1_id 
-        io.emit("playerMovement", {
-            forId: otherPlayerId,
-            ...data
-        })  
+        if(getPlayerById(socket.id).connected_to_room){
+            let otherPlayerId: string = ""
+            let playerRoom: room = getRoomByPlayerId(socket.id)
+            otherPlayerId = playerRoom.player_1_id === socket.id ? playerRoom.player_2_id : playerRoom.player_1_id 
+            io.emit("playerMovement", {
+                forId: otherPlayerId,
+                ...data
+            })  
+        }
+    })
+
+    socket.on("armRotation", (data: any) => {
+        if(getPlayerById(socket.id).connected_to_room){
+            let otherPlayerId: string = ""
+            let playerRoom: room = getRoomByPlayerId(socket.id)
+            otherPlayerId = playerRoom.player_1_id === socket.id ? playerRoom.player_2_id : playerRoom.player_1_id 
+            io.emit("rotateArm", {
+                forId: otherPlayerId,
+                ...data
+            })
+        }
     })
 
     socket.on("disconnect", () => {
