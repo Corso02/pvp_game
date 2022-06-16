@@ -1,11 +1,16 @@
-import Phaser ,{ Input, Physics } from "phaser";
+import Phaser ,{ Input, Physics, Time } from "phaser";
 import { pistol, Weapon } from "./Weapon";
-import RotateTo from 'phaser3-rex-plugins/plugins/rotateto.js';
+import socket from "..";
 
 interface movement {
     moving: boolean,
     moving_left: boolean,
     moving_right: boolean
+}
+
+interface event{
+    timestamp: number,
+    event: string
 }
 
 class Player extends Phaser.GameObjects.Container{
@@ -21,7 +26,10 @@ class Player extends Phaser.GameObjects.Container{
         moving_right: false
     }
     private arm_container: Phaser.GameObjects.Container //container to clip together weapon and arm, easier manipulation with weapon and arm
-    private rotateObj: RotateTo
+    private movement_event_sent: event = { // track when last movement event was emmited
+        event: "",
+        timestamp: 0
+    }
 
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string, game: Phaser.Game){
         super(scene, x, y)
@@ -44,6 +52,8 @@ class Player extends Phaser.GameObjects.Container{
         this.scene.physics.world.enableBody(this.arm, Physics.Arcade.STATIC_BODY)
         this.scene.physics.world.enableBody(this.arm_container, Physics.Arcade.STATIC_BODY)
 
+        this.movement_event_sent.event = "stop"
+        this.movement_event_sent.timestamp = 0
 
         this.createAnims(game)
     }
@@ -140,14 +150,43 @@ class Player extends Phaser.GameObjects.Container{
         if(keys.MOVE_LEFT.isDown || keys.MOVE_LEFT_ALT.isDown){
             this.player_body.anims.play("left_no_gun", true)
             this.moveLeft(pointer)
+            if(this.movement_event_sent.event != "left" || this.movement_event_sent.timestamp - Math.floor(Date.now() / 1000) > 10){
+                socket.emit("movement", {
+                    x_cord: this.x,
+                    y_cord: this.y,
+                    movement: "left"
+                })
+                this.movement_event_sent.event = "left"
+                this.movement_event_sent.timestamp = Math.floor(Date.now() / 1000)
+            }
         }
         else if(keys.MOVE_RIGHT.isDown || keys.MOVE_RIGHT_ALT.isDown){
             this.player_body.anims.play("right_no_gun", true)
             this.moveRight(pointer)
+
+            if(this.movement_event_sent.event != "right" || this.movement_event_sent.timestamp - Math.floor(Date.now() / 1000) > 10){
+                socket.emit("movement", {
+                    x_cord: this.x,
+                    y_cord: this.y,
+                    movement: "right"
+                })
+
+                this.movement_event_sent.timestamp = Math.floor(Date.now() / 1000)
+                this.movement_event_sent.event = "right"
+            }
         }
         else{
             this.player_body.anims.play("turn_no_gun", true)
             this.moveStop()
+
+            if(this.movement_event_sent.event != "stop"){
+                socket.emit("movement", {
+                    x_cord: this.x,
+                    y_cord: this.y,
+                    movement: "stop"
+                })
+                this.movement_event_sent.event = "stop"
+            }
         }
         if(Phaser.Input.Keyboard.JustDown(keys.JUMP) || Phaser.Input.Keyboard.JustDown(keys.JUMP_ALT)){
             if(this.body.gameObject){
@@ -175,7 +214,6 @@ class Player extends Phaser.GameObjects.Container{
         if(this.arm_container.getByName("weapon") != null)
             this.arm_container.getByName("weapon").body.gameObject.scaleY = !this.movement.moving && pointer.worldX < this.x ? -1 : 1 // rotate weapon on Y axis according to mouse pos.
     }
-    // object1 - player container, object2 - weapon
     pickWeapon(player: any, weapon: any){
         if(weapon.texture.key == "pistol")
             this.setWeapon(pistol)

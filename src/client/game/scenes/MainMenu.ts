@@ -3,6 +3,7 @@ import Player from "../player";
 import {KEY_BINDINGS, Keyboard} from "../Keyboard";
 import {render_platforms, world_1_platforms } from "../Platforms";
 import { check_bullets, create_custom_weapon, render_weapon, Weapon } from "../Weapon";
+import socket from "../..";
 
 class MainMenu extends Scene{
     private player: Player
@@ -58,6 +59,12 @@ class MainMenu extends Scene{
 
         this.input.on("pointermove", (pointer: Input.Pointer) => {
             this.player.rotateArm(pointer)
+        })
+
+        socket.on("playerMovement", (data: any) => {
+            if(data.forId == socket.id){
+                console.log("other player moved")
+            }
         })
     }
 
